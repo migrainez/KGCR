@@ -127,13 +127,13 @@ class KGCL(nn.Module):
         self.ra_coef = args_config.ra_coef
         self.cl_coef = args_config.cl_coef
         self.tau = args_config.cl_tau
+        self.rau = args_config.cl_rau
         self.cl_drop = args_config.cl_drop_ratio
 
         self.samp_func = "torch"
 
 
         
-        # update hps
         if hp_dict is not None:
             for k,v in hp_dict.items():
                 setattr(self, k, v)
@@ -146,7 +146,6 @@ class KGCL(nn.Module):
         self._init_weight()
         self.all_embed = nn.Parameter(self.all_embed)
 
-        n_facts = 4
         initializer = nn.init.xavier_uniform_
         intent_emb = initializer(torch.empty(self.n_relations - 1, self.emb_size))
         self.intent_emb = nn.Parameter(intent_emb)
@@ -159,9 +158,8 @@ class KGCL(nn.Module):
                        mess_dropout_rate=self.mess_dropout_rate)
         self.contrast_fn = Contrast(self.emb_size, tau=self.tau)
 
-        self.contrast_intent = Contrast(self.emb_size, tau=0.7)
+        self.contrast_intent = Contrast(self.emb_size, tau=self.rau)
 
-        # self.print_shapes()
 
     def _init_weight(self):
         initializer = nn.init.xavier_uniform_
@@ -191,20 +189,18 @@ class KGCL(nn.Module):
 
         user_emb = self.all_embed[:self.n_users, :]
         item_emb = self.all_embed[self.n_users:, :]
-        # 1. graph sprasification;
         edge_index, edge_type = _relation_aware_edge_sampling(
             self.edge_index, self.edge_type, self.n_relations, self.node_dropout_rate)
-        # 2. compute rationale scores;
         edge_attn_score, edge_attn_logits = self.gcn.norm_attn_computer(
             item_emb, edge_index, edge_type, print=epoch_start, return_logits=True)
-
-        # for adaptive UI MAE
+        
+        
         item_attn_mean_1 = scatter_mean(edge_attn_score, edge_index[0], dim=0, dim_size=self.n_entities)
         item_attn_mean_1[item_attn_mean_1 == 0.] = 1.
         item_attn_mean_2 = scatter_mean(edge_attn_score, edge_index[1], dim=0, dim_size=self.n_entities)
         item_attn_mean_2[item_attn_mean_2 == 0.] = 1.
         item_attn_mean = (0.5 * item_attn_mean_1 + 0.5 * item_attn_mean_2)[:self.n_items]
-        # for adaptive MAE training
+
         std = torch.std(edge_attn_score)
         noise = -torch.log(-torch.log(torch.rand_like(edge_attn_score)))
         edge_attn_score_n = edge_attn_score + noise
@@ -315,6 +311,7 @@ class KGCL(nn.Module):
         self.logger.info("########## Ablation ##########")
         self.logger.info("ablation: {}".format(self.ablation))
         self.logger.info("########## Model HPs ##########")
+        self.logger.info("rau: {}".format(self.rau))
         self.logger.info("tau: {}".format(self.contrast_fn.tau))
         self.logger.info("cL_drop: {}".format(self.cl_drop))
         self.logger.info("cl_coef: {}".format(self.cl_coef))
