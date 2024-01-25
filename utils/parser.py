@@ -2,7 +2,7 @@ import argparse
 
 
 def parse_args_kgsr():
-    parser = argparse.ArgumentParser(description="MKG")
+    parser = argparse.ArgumentParser(description="KGCL")
     # ===== log ===== #
     parser.add_argument('--desc', type=str, default="", help='EXP description')
     parser.add_argument('--log', action='store_true', default=True, help='log in file or not')
@@ -20,7 +20,8 @@ def parse_args_kgsr():
     # ===== Model HPs ===== #
     parser.add_argument('--ra_coef', type=float, default=0.1, help='coefficient for RA loss')
     parser.add_argument('--cl_coef', type=float, default=0.01, help='coefficient for CL loss')
-    parser.add_argument('--cl_tau', type=float, default=0.7, help='temperature for CL')
+    parser.add_argument('--cl_tau', type=float, default=0.7, help='temperature for VA')
+    parser.add_argument('--cl_rau', type=float, default=0.7, help='temperature for RA')
     parser.add_argument('--cl_drop_ratio', type=float, default=0.5, help='drop ratio for CL')
 
     # ===== train ===== #
