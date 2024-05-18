@@ -1,7 +1,6 @@
-# KRCL
+# KGCR
 
 This is our Pytorch implementation for the paper:
 
-Knowledge Graph Rationale Contrastive Learning for Recommendation
-
+Knowledge Graph Collaborative Signal-driven Rationalization for Recommendation
 
