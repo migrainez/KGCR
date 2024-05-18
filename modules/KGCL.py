@@ -207,7 +207,7 @@ class KGCL(nn.Module):
         topk_v, topk_attn_edge_id = torch.topk(
             edge_attn_score_n, 256, sorted=False)
 
-        enc_edge_index, enc_edge_type, masked_edge_index, masked_edge_type, mask_bool = _mae_edge_mask_adapt_mixed(edge_index, edge_type, topk_attn_edge_id)
+        enc_edge_index, enc_edge_type, _, _, _ = _mae_edge_mask_adapt_mixed(edge_index, edge_type, topk_attn_edge_id)
 
         inter_edge, inter_edge_w = _sparse_dropout(
             self.inter_edge, self.inter_edge_w, self.node_dropout_rate)
@@ -226,9 +226,10 @@ class KGCL(nn.Module):
 
         loss, rec_loss, reg_loss = self.create_bpr_loss(u_e, pos_e, neg_e)
 
+        # RA task
         ra_loss = self.ra_coef * self.contrast_intent(self.intent_emb, self.gcn.relation_emb)
 
-        # CL task
+        # VA task
         """adaptive sampling"""
         cl_kg_edge, cl_kg_type = _adaptive_kg_drop_cl(
             edge_index, edge_type, edge_attn_score_n, keep_rate=1-self.cl_drop)
@@ -244,7 +245,7 @@ class KGCL(nn.Module):
 
         loss_dict = {
                 "rec_loss": loss.item(),
-                "mae_loss": ra_loss.item(),
+                "ra_loss": ra_loss.item(),
                 "cl_loss": cl_loss.item(),
             }
         return loss + ra_loss + cl_loss, loss_dict, edge_attn_score
